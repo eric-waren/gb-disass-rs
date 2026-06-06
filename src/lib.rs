@@ -209,8 +209,8 @@ pub trait MemoryBus {
 /// * `upcase`: return the textual representation as UPCASE letters (including hexadecimal)
 /// * `comma_space`: add or a not a space after a comma with 2 operands (e.g. `ld a, b`)
 pub struct Preferences {
-    upcase: bool,
-    comma_space: bool,
+    pub upcase: bool,
+    pub comma_space: bool,
 }
 
 impl Preferences {
