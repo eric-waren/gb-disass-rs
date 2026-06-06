@@ -2,6 +2,21 @@
 
 Rust library to disassemble Game Boy binary
 
+## Install
+
+Via CLI
+
+```sh
+cargo add gb-disass-rs
+```
+
+Via `Cargo.toml`
+
+```toml
+[dependencies]
+gb-disass-rs = "*"
+```
+
 ## Interfaces
 
 ```rust

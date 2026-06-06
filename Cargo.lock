@@ -4,4 +4,4 @@ version = 4
 
 [[package]]
 name = "gb-disass-rs"
-version = "0.9.10"
+version = "1.0.0"
