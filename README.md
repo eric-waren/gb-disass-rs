@@ -19,52 +19,28 @@ gb-disass-rs = "*"
 
 ## Interfaces
 
+These are the usable exported constructs. For more information on their usage, please read the [documentation](https://docs.rs/gb-disass-rs/latest/gb_disass_rs/)
+
 ```rust
-/// Trait to be implemented by the `disass` function caller. This allows the `disass` function to
-/// access the binary Game Boy data.
 pub trait MemoryBus {
     fn read_byte(&self, addr: u16) -> Option<u8>;
     fn read_word(&self, addr: u16) -> Option<u16>;
 }
 
-/// Display preferences for the `disass` function.
-///
-/// * `upcase`: return the textual representation as UPCASE letters (including hexadecimal)
-/// * `comma_space`: add or a not a space after a comma with 2 operands (e.g. `ld a, b`)
 pub struct Preferences {
     upcase: bool,
     comma_space: bool,
 }
 
-/// Return a textual representation of a Game Boy binary operation, compatible with the RGBDS syntax in a `String`.
-///
-/// # Example
-/// ```ignore
-/// let bus = GameboyBus::new(vec![0x01, 0x12, 0x34]);
-/// let prefs = Preferences{upcase: true, comma_space: true};
-/// let result = disass(&bus, 0x0, &prefs);
-///
-/// assert_eq!(result, Ok((3, "LD BC, $1234".to_string())))
-/// ```
-///
-/// # Errors
-///
-/// * The operation needs one or two operands but an insufficient number is found
-/// * The opcode isn't a valid Game Boy operation (unsupported)
-///
-/// # Result
-///
-/// Returns a tuple containing the number of bytes (as a u16) consumed and the textual representation in a
-/// String.
-///
-/// The byte count number can be used to increment a PC register in an emulator.
-pub fn disass(bus: &impl MemoryBus, addr: u16, prefs: &Preferences) -> Result<(u16, String), String>;
+pub fn disassemble(bus: &impl MemoryBus, addr: u16, prefs: &Preferences) -> Result<(u16, String), String>;
+pub fn decode(bus: &impl MemoryBus, addr: u16) -> Result<Operation, String>;
+pub fn next_operation_offset(operation: &Operation) -> u16;
 ```
 
 ## Examples
 
 ```rust
-use gb_disass_rs::{MemoryBus, Preferences, disass};
+use gb_disass_rs::{MemoryBus, Preferences, disassemble};
 
 struct GameboyBus {
     data: Vec<u8>,
@@ -101,7 +77,7 @@ impl MemoryBus for GameboyBus {
 fn main() {
     let bus = GameboyBus::new(vec![0x01, 0x12, 0x34]);
     let prefs = Preferences{upcase: true, comma_space: true};
-    let result = disass(&bus, 0x0, &prefs);
+    let result = disassemble(&bus, 0x0, &prefs);
 
     assert_eq!(result, Ok((3, "LD BC, $1234".to_string())))
 }

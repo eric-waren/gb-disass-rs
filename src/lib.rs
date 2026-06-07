@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-// Symbolic representation of all Game Boy operation mnemonics
+/// Symbolic representation of all Game Boy operation mnemonics
 #[derive(Debug)]
 pub enum Mnemonic {
     NOP,
@@ -62,12 +62,12 @@ impl Display for Mnemonic {
     }
 }
 
-// Symbolic representation of all Game Boy operation operands
-//
-// -R -> Reference. e.g. HLR -> [HL]
-// -I -> Increment
-// -D -> Decrement
-// c- -> condition
+/// Symbolic representation of all Game Boy operation operands
+///
+/// * `-R` -> Reference. e.g. `HLR -> [HL]`
+/// * `-I` -> Increment
+/// * `-D` -> Decrement
+/// * `c-` -> condition. e.g. `cNC -> NC`
 #[derive(Debug)]
 #[allow(non_camel_case_types)]
 pub enum Operand {
@@ -110,9 +110,21 @@ impl Display for Operand {
     }
 }
 
+/// Symbolic representation of a Game Boy binary operation. It contains one opcode Mnemonic for the
+/// and 1-2 operands.
 pub type Operation = (Mnemonic, Vec<Operand>);
 
-// Compute the next offset relative to the current PC address's operation
+/// Compute the next offset relative to the current PC address's operation
+///
+/// # Examples
+///
+/// ```ignore
+/// let bus = GameboyBus::new(vec![0x01, 0x12, 0x34]);
+/// let operation = decode(&bus, addr)?;
+///
+/// assert_eq!(next_operation_offset(operation), 3);
+/// ```
+///
 pub fn next_operation_offset(operation: &Operation) -> u16 {
     // There's at least one byte read
     let mut count = 1;
@@ -149,23 +161,23 @@ pub fn next_operation_offset(operation: &Operation) -> u16 {
     count
 }
 
-// Translate a symbolic representation into a textual one, compatible with RGBDS syntax and
-// following preferences.
-//
-// # Examples
-//
-// ```
-// let bus = GameboyBus::new(vec![0x01, 0x12, 0x34]);
-// let prefs = Preferences{upcase: true, comma_space: true};
-// let result = disassemble(&bus, 0x0, &prefs);
-//
-// assert_eq!(result, Ok((3, "LD BC, $1234".to_string())))
-// ```
-//
-// # Errors
-//
-// * String allocation during formatting failed
-//
+/// Translate a symbolic representation into a textual one, compatible with RGBDS syntax and
+/// following preferences.
+///
+/// # Examples
+///
+/// ```ignore
+/// let bus = GameboyBus::new(vec![0x01, 0x12, 0x34]);
+/// let prefs = Preferences{upcase: true, comma_space: true};
+/// let result = disassemble(&bus, 0x0, &prefs);
+///
+/// assert_eq!(result, Ok((3, "LD BC, $1234".to_string())))
+/// ```
+///
+/// # Errors
+///
+/// * String allocation during formatting failed
+///
 pub fn render(operation: &Operation, prefs: &Preferences) -> Result<String, std::fmt::Error> {
     let mut buffer = String::new();
     let mn = &operation.0;
@@ -176,7 +188,6 @@ pub fn render(operation: &Operation, prefs: &Preferences) -> Result<String, std:
     use Mnemonic::*;
 
     write!(buffer, "{}", mn.to_string())?;
-
 
     for (idx, op) in ops.iter().enumerate() {
         if idx == 0 {
@@ -233,17 +244,18 @@ pub fn render(operation: &Operation, prefs: &Preferences) -> Result<String, std:
     Ok(buffer)
 }
 
-// Trait to be implemented by the `disass` function caller. This allows the `disass` function to
-// access the binary Game Boy data.
+/// Trait to be implemented by the `disass` function caller. This allows the `disass` function to
+/// access the binary Game Boy data.
 pub trait MemoryBus {
     fn read_byte(&self, addr: u16) -> Option<u8>;
     fn read_word(&self, addr: u16) -> Option<u16>;
 }
 
-// Display preferences for the `disass` function.
-//
-// * `upcase`: return the textual representation as UPCASE letters (including hexadecimal)
-// * `comma_space`: add or a not a space after a comma with 2 operands (e.g. `ld a, b`)
+/// Display preferences for the `disass` function.
+///
+/// * `upcase`: return the textual representation as UPCASE letters (including hexadecimal
+/// representation)
+/// * `comma_space`: add or a not a space after a comma with 2 operands (e.g. `ld a, b`)
 pub struct Preferences {
     pub upcase: bool,
     pub comma_space: bool,
@@ -255,30 +267,30 @@ impl Preferences {
     }
 }
 
-// Return a PC offset and a textual representation as a String of a Game Boy binary operation following the
-// RGBDS syntax.
-//
-// # Example
-// ```
-// let bus = GameboyBus::new(vec![0x01, 0x12, 0x34]);
-// let prefs = Preferences{upcase: true, comma_space: true};
-// let result = disass(&bus, 0x0, &prefs);
-//
-// assert_eq!(result, Ok((3, "LD BC, $1234".to_string())))
-// ```
-//
-// # Errors
-//
-// * The operation needs one or two operands but an insufficient number is found
-// * The opcode isn't a valid Game Boy operation (unsupported)
-// * String allocation during formatting failed
-//
-// # Result
-//
-// Returns a tuple containing the number of bytes (as a u16) consumed and the textual representation in a
-// String.
-//
-// The byte count number can be used to increment a PC register in an emulator.
+/// Return a PC offset and a textual representation as a String of a Game Boy binary operation following the
+/// RGBDS syntax.
+///
+/// # Example
+/// ```ignore
+/// let bus = GameboyBus::new(vec![0x01, 0x12, 0x34]);
+/// let prefs = Preferences{upcase: true, comma_space: true};
+/// let result = disass(&bus, 0x0, &prefs);
+///
+/// assert_eq!(result, Ok((3, "LD BC, $1234".to_string())))
+/// ```
+///
+/// # Errors
+///
+/// * The operation needs one or two operands but an insufficient number is found
+/// * The opcode isn't a valid Game Boy operation (unsupported)
+/// * String allocation during formatting failed
+///
+/// # Result
+///
+/// Returns a tuple containing the number of bytes (as a u16) consumed and the textual representation in a
+/// String.
+///
+/// The byte count number can be used to increment a PC register in an emulator.
 pub fn disassemble(bus: &impl MemoryBus, addr: u16, prefs: &Preferences) -> Result<(u16, String), String> {
     let operation = decode(bus, addr)?;
     let offset = next_operation_offset(&operation);
@@ -288,8 +300,7 @@ pub fn disassemble(bus: &impl MemoryBus, addr: u16, prefs: &Preferences) -> Resu
     Ok((offset, repr))
 }
 
-// Deprecated function with an ugly name
-#[deprecated(since="1.1.0")]
+#[deprecated(since="1.1.0", note="Please use disassemble instead")]
 pub fn disass(bus: &impl MemoryBus, addr: u16, prefs: &Preferences) -> Result<(u16, String), String> {
     disassemble(bus, addr, prefs)
 }
@@ -304,27 +315,27 @@ fn next_word(bus: &impl MemoryBus, addr: u16) -> Result<u16, String> {
     bus.read_word(addr).ok_or(format!("Word operand not available"))
 }
 
-// Decode 1-3 bytes and return a symbolic representation using the Mnemonic and Operand types.
-//
-// # Example
-//
-// ```
-// let bus = GameboyBus::new(vec![0x01, 0x12, 0x34]);
-// let (mn, ops) = decode(&bus, 0x00);
-//
-// assert_eq!(mn, Mnemonic::LD);
-// assert_eq!(ops, vec![N16(0x1234)])
-// ```
-//
-// # Errors
-//
-// * The operation needs one or two operands but an insufficient number is found
-// * The opcode isn't a valid Game Boy operation (unsupported)
-//
-// # Returns
-//
-// Upon success, this function returns a tuple consisting of a Mnemonic and a Vector of Operand's
-//
+/// Decode 1-3 bytes and return a symbolic representation using the Mnemonic and Operand types.
+///
+/// # Example
+///
+/// ```ignore
+/// let bus = GameboyBus::new(vec![0x01, 0x12, 0x34]);
+/// let (mn, ops) = decode(&bus, 0x00);
+///
+/// assert_eq!(mn, Mnemonic::LD);
+/// assert_eq!(ops, vec![N16(0x1234)])
+/// ```
+///
+/// # Errors
+///
+/// * The operation needs one or two operands but an insufficient number is found
+/// * The opcode isn't a valid Game Boy operation (unsupported)
+///
+/// # Returns
+///
+/// Upon success, this function returns a tuple consisting of a Mnemonic and a Vector of Operand's
+///
 pub fn decode(bus: &impl MemoryBus, addr: u16) -> Result<Operation, String> {
     let opcode = bus.read_byte(addr).ok_or(format!("Opcode not found at address {:04X}", addr))?;
     let addr = addr + 1;
@@ -957,11 +968,11 @@ mod tests {
 
     #[test]
     fn ld_bc_n16() {
-        let bus = GameboyBus::new(vec![0x01, 0x12, 0x34]);
+        let bus = GameboyBus::new(vec![0x01, 0xab, 0xcd]);
         let prefs = Preferences{upcase: true, comma_space: true};
         let result = disassemble(&bus, 0x0, &prefs);
 
-        assert_eq!(result, Ok((3, "LD BC, $1234".to_string())))
+        assert_eq!(result, Ok((3, "LD BC, $ABCD".to_string())))
     }
 
     #[test]
@@ -984,11 +995,11 @@ mod tests {
 
     #[test]
     fn ld_bc_n16r_lower() {
-        let bus = GameboyBus::new(vec![0x01, 0x12, 0x34]);
+        let bus = GameboyBus::new(vec![0x01, 0xab, 0xcd]);
         let prefs = Preferences{upcase: false, comma_space: true};
         let result = disassemble(&bus, 0x0, &prefs);
 
-        assert_eq!(result, Ok((3, "ld bc, $1234".to_string())))
+        assert_eq!(result, Ok((3, "ld bc, $abcd".to_string())))
     }
 
     #[test]
