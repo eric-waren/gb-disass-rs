@@ -1,5 +1,6 @@
 use std::fmt::Display;
 
+// Symbolic representation of all Game Boy operation mnemonics
 #[derive(Debug)]
 pub enum Mnemonic {
     NOP,
@@ -61,9 +62,12 @@ impl Display for Mnemonic {
     }
 }
 
+// Symbolic representation of all Game Boy operation operands
+//
 // -R -> Reference. e.g. HLR -> [HL]
 // -I -> Increment
 // -D -> Decrement
+// c- -> condition
 #[derive(Debug)]
 #[allow(non_camel_case_types)]
 pub enum Operand {
@@ -87,7 +91,6 @@ pub enum Operand {
     HLI, // [HLI]
     HLD, // [HLD]
 
-    // Conditions
     cZ,
     cNZ,
     cC,
@@ -107,22 +110,64 @@ impl Display for Operand {
     }
 }
 
-type Operation = (Mnemonic, Vec<Operand>);
+pub type Operation = (Mnemonic, Vec<Operand>);
+
+// Compute the next offset relative to the current PC address's operation
+pub fn next_operation_offset(operation: &Operation) -> u16 {
+    // There's at least one byte read
+    let mut count = 1;
+
+    use Operand::*;
+    use Mnemonic::*;
+
+    // CB Prefix
+    if let RLC | RRC | RL | RR | SLA | SRA | SRL | SWAP | BIT | RES | SET = operation.0 {
+        count += 1;
+    }
+
+    for op in operation.1.iter() {
+        match op {
+            N8(_) => {
+                if !matches!(operation.0, RST) {
+                    count += 1;
+                }
+            },
+            I8(_) => {
+                count += 1;
+            },
+            N16(_) => {
+                count += 2;
+            },
+            N16R(_) => {
+                count += 2;
+            },
+
+            _ => ()
+        }
+    }
+
+    count
+}
 
 // Translate a symbolic representation into a textual one, compatible with RGBDS syntax and
-// following preferences
+// following preferences.
 //
 // # Examples
 //
+// ```
+// let bus = GameboyBus::new(vec![0x01, 0x12, 0x34]);
+// let prefs = Preferences{upcase: true, comma_space: true};
+// let result = disassemble(&bus, 0x0, &prefs);
 //
-// # Erros
+// assert_eq!(result, Ok((3, "LD BC, $1234".to_string())))
+// ```
 //
-// * Next byte or next word in operands are absent
+// # Errors
 //
-// # Panics
-fn render(operation: &Operation, prefs: &Preferences) -> Result<(u16, String), String> {
+// * String allocation during formatting failed
+//
+pub fn render(operation: &Operation, prefs: &Preferences) -> Result<String, std::fmt::Error> {
     let mut buffer = String::new();
-    let mut count = 1;
     let mn = &operation.0;
     let ops = &operation.1;
 
@@ -130,66 +175,54 @@ fn render(operation: &Operation, prefs: &Preferences) -> Result<(u16, String), S
     use Operand::*;
     use Mnemonic::*;
 
-    write!(buffer, "{}", mn.to_string()).unwrap();
+    write!(buffer, "{}", mn.to_string())?;
 
-    // CB Prefix
-    if let RLC | RRC | RL | RR | SLA | SRA | SRL | SWAP | BIT | RES | SET = mn {
-        count += 1;
-    }
 
     for (idx, op) in ops.iter().enumerate() {
         if idx == 0 {
-            write!(buffer, " ").unwrap();
+            write!(buffer, " ")?;
         } else {
-            write!(buffer, ",").unwrap();
+            write!(buffer, ",")?;
             if prefs.comma_space {
-                write!(buffer, " ").unwrap();
+                write!(buffer, " ")?;
             }
         }
 
         match op {
             cZ | cNZ | cC | cNC => {
                 let v = op.to_string();
-                write!(buffer, "{}", &v[1..]).unwrap();
+                write!(buffer, "{}", &v[1..])?;
             }
             BCR | DER | HLR | CR => {
                 let mut v = op.to_string();
                 v.pop();
-                write!(buffer, "[{}]", v).unwrap();
+                write!(buffer, "[{}]", v)?;
             },
-            HLI | HLD => write!(buffer, "[{}]", op).unwrap(),
+            HLI | HLD => write!(buffer, "[{}]", op)?,
             N8(byte) => {
                 if let LDH = mn {
-                    write!(buffer, "[$FF{:02X}]", byte).unwrap();
-                    count += 1;
+                    write!(buffer, "[$FF{:02X}]", byte)?;
                 } else {
-                    write!(buffer, "${:02X}", byte).unwrap();
-                    if !matches!(mn, RST) {
-                        count += 1;
-                    }
+                    write!(buffer, "${:02X}", byte)?;
                 }
             },
             I8(byte) => {
                 if let LD = mn {
                     let val = *byte as i8;
                     let sign = if val < 0 { "" } else { "+" };
-                    write!(buffer, "SP{}{}", sign, val).unwrap();
-                    count += 1;
+                    write!(buffer, "SP{}{}", sign, val)?;
                 } else {
-                    write!(buffer, "{}", *byte as i8).unwrap();
-                    count += 1;
+                    write!(buffer, "{}", *byte as i8)?;
                 }
             },
             N16(word) => {
-                write!(buffer, "${:04X}", word).unwrap();
-                count += 2;
+                write!(buffer, "${:04X}", word)?;
             },
             N16R(word) => {
-                write!(buffer, "[${:04X}]", word).unwrap();
-                count += 2;
+                write!(buffer, "[${:04X}]", word)?;
             },
-            Index(idx) => write!(buffer, "{}", idx).unwrap(),
-            val => write!(buffer, "{}", val.to_string()).unwrap(),
+            Index(idx) => write!(buffer, "{}", idx)?,
+            val => write!(buffer, "{}", val.to_string())?,
         }
     }
 
@@ -197,15 +230,7 @@ fn render(operation: &Operation, prefs: &Preferences) -> Result<(u16, String), S
         buffer = buffer.to_lowercase();
     }
 
-    Ok((count, buffer))
-}
-
-fn next_byte(bus: &impl MemoryBus, addr: u16) -> Result<u8, String> {
-    bus.read_byte(addr).ok_or(format!("Byte operand not available"))
-}
-
-fn next_word(bus: &impl MemoryBus, addr: u16) -> Result<u16, String> {
-    bus.read_word(addr).ok_or(format!("Word operand not available"))
+    Ok(buffer)
 }
 
 // Trait to be implemented by the `disass` function caller. This allows the `disass` function to
@@ -230,7 +255,8 @@ impl Preferences {
     }
 }
 
-// Return a textual representation of a Game Boy binary operation, compatible with the RGBDS syntax in a `String`.
+// Return a PC offset and a textual representation as a String of a Game Boy binary operation following the
+// RGBDS syntax.
 //
 // # Example
 // ```
@@ -245,10 +271,7 @@ impl Preferences {
 //
 // * The operation needs one or two operands but an insufficient number is found
 // * The opcode isn't a valid Game Boy operation (unsupported)
-//
-// # Panics
-//
-// String allocation failures
+// * String allocation during formatting failed
 //
 // # Result
 //
@@ -258,8 +281,27 @@ impl Preferences {
 // The byte count number can be used to increment a PC register in an emulator.
 pub fn disassemble(bus: &impl MemoryBus, addr: u16, prefs: &Preferences) -> Result<(u16, String), String> {
     let operation = decode(bus, addr)?;
+    let offset = next_operation_offset(&operation);
 
-    render(&operation, prefs)
+    let repr = render(&operation, prefs).map_err(|e| format!("A formatting error occured: {}", e))?;
+
+    Ok((offset, repr))
+}
+
+// Deprecated function with an ugly name
+#[deprecated(since="1.1.0")]
+pub fn disass(bus: &impl MemoryBus, addr: u16, prefs: &Preferences) -> Result<(u16, String), String> {
+    disassemble(bus, addr, prefs)
+}
+
+// Shortcut to handle fetching next byte and erroring
+fn next_byte(bus: &impl MemoryBus, addr: u16) -> Result<u8, String> {
+    bus.read_byte(addr).ok_or(format!("Byte operand not available"))
+}
+
+// Shortcut to handle fetching next word and erroring
+fn next_word(bus: &impl MemoryBus, addr: u16) -> Result<u16, String> {
+    bus.read_word(addr).ok_or(format!("Word operand not available"))
 }
 
 // Decode 1-3 bytes and return a symbolic representation using the Mnemonic and Operand types.
@@ -282,6 +324,7 @@ pub fn disassemble(bus: &impl MemoryBus, addr: u16, prefs: &Preferences) -> Resu
 // # Returns
 //
 // Upon success, this function returns a tuple consisting of a Mnemonic and a Vector of Operand's
+//
 pub fn decode(bus: &impl MemoryBus, addr: u16) -> Result<Operation, String> {
     let opcode = bus.read_byte(addr).ok_or(format!("Opcode not found at address {:04X}", addr))?;
     let addr = addr + 1;
