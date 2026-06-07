@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 #[derive(Debug)]
-enum Mnemonic {
+pub enum Mnemonic {
     NOP,
     STOP,
     HALT,
@@ -65,7 +65,8 @@ impl Display for Mnemonic {
 // -I -> Increment
 // -D -> Decrement
 #[derive(Debug)]
-enum Operand {
+#[allow(non_camel_case_types)]
+pub enum Operand {
     A,
     B,
     C,
@@ -86,9 +87,11 @@ enum Operand {
     HLI, // [HLI]
     HLD, // [HLD]
 
-    Z,
-    NZ,
-    NC, // C already defined as register. Doesn't matter
+    // Conditions
+    cZ,
+    cNZ,
+    cC,
+    cNC,
 
     N8(Option<u8>),
     I8(Option<u8>),
@@ -125,6 +128,10 @@ fn d(mn: Mnemonic, ops: &[Operand], prefs: &Preferences) -> Result<(u16, String)
         }
 
         match op {
+            cZ | cNZ | cC | cNC => {
+                let v = op.to_string();
+                write!(buffer, "{}", &v[1..]).unwrap();
+            }
             BCR | DER | HLR | CR => {
                 let mut v = op.to_string();
                 v.pop();
@@ -197,17 +204,17 @@ fn d(mn: Mnemonic, ops: &[Operand], prefs: &Preferences) -> Result<(u16, String)
     Ok((count, buffer))
 }
 
-/// Trait to be implemented by the `disass` function caller. This allows the `disass` function to
-/// access the binary Game Boy data.
+// Trait to be implemented by the `disass` function caller. This allows the `disass` function to
+// access the binary Game Boy data.
 pub trait MemoryBus {
     fn read_byte(&self, addr: u16) -> Option<u8>;
     fn read_word(&self, addr: u16) -> Option<u16>;
 }
 
-/// Display preferences for the `disass` function.
-///
-/// * `upcase`: return the textual representation as UPCASE letters (including hexadecimal)
-/// * `comma_space`: add or a not a space after a comma with 2 operands (e.g. `ld a, b`)
+// Display preferences for the `disass` function.
+//
+// * `upcase`: return the textual representation as UPCASE letters (including hexadecimal)
+// * `comma_space`: add or a not a space after a comma with 2 operands (e.g. `ld a, b`)
 pub struct Preferences {
     pub upcase: bool,
     pub comma_space: bool,
@@ -219,28 +226,28 @@ impl Preferences {
     }
 }
 
-/// Return a textual representation of a Game Boy binary operation, compatible with the RGBDS syntax in a `String`.
-///
-/// # Example
-/// ```ignore
-/// let bus = GameboyBus::new(vec![0x01, 0x12, 0x34]);
-/// let prefs = Preferences{upcase: true, comma_space: true};
-/// let result = disass(&bus, 0x0, &prefs);
-///
-/// assert_eq!(result, Ok((3, "LD BC, $1234".to_string())))
-/// ```
-///
-/// # Errors
-///
-/// * The operation needs one or two operands but an insufficient number is found
-/// * The opcode isn't a valid Game Boy operation (unsupported)
-///
-/// # Result
-///
-/// Returns a tuple containing the number of bytes (as a u16) consumed and the textual representation in a
-/// String.
-///
-/// The byte count number can be used to increment a PC register in an emulator.
+// Return a textual representation of a Game Boy binary operation, compatible with the RGBDS syntax in a `String`.
+//
+// # Example
+// ```
+// let bus = GameboyBus::new(vec![0x01, 0x12, 0x34]);
+// let prefs = Preferences{upcase: true, comma_space: true};
+// let result = disass(&bus, 0x0, &prefs);
+//
+// assert_eq!(result, Ok((3, "LD BC, $1234".to_string())))
+// ```
+//
+// # Errors
+//
+// * The operation needs one or two operands but an insufficient number is found
+// * The opcode isn't a valid Game Boy operation (unsupported)
+//
+// # Result
+//
+// Returns a tuple containing the number of bytes (as a u16) consumed and the textual representation in a
+// String.
+//
+// The byte count number can be used to increment a PC register in an emulator.
 pub fn disass(bus: &impl MemoryBus, addr: u16, prefs: &Preferences) -> Result<(u16, String), String> {
     let opcode = bus.read_byte(addr).ok_or(format!("Opcode not found at address {:04X}", addr))?;
 
@@ -287,7 +294,7 @@ pub fn disass(bus: &impl MemoryBus, addr: u16, prefs: &Preferences) -> Result<(u
         0x1E => d(LD, &[E, N8(next_byte)], prefs),
         0x1F => d(RRA, &[], prefs),
 
-        0x20 => d(JR, &[NZ, I8(next_byte)], prefs),
+        0x20 => d(JR, &[cNZ, I8(next_byte)], prefs),
         0x21 => d(LD, &[HL, N16(next_word)], prefs),
         0x22 => d(LD, &[HLI, A], prefs),
         0x23 => d(INC, &[HL], prefs),
@@ -296,7 +303,7 @@ pub fn disass(bus: &impl MemoryBus, addr: u16, prefs: &Preferences) -> Result<(u
         0x26 => d(LD, &[H, N8(next_byte)], prefs),
         0x27 => d(DAA, &[], prefs),
 
-        0x28 => d(JR, &[Z, I8(next_byte)], prefs),
+        0x28 => d(JR, &[cZ, I8(next_byte)], prefs),
         0x29 => d(ADD, &[HL, HL], prefs),
         0x2A => d(LD, &[A, HLI], prefs),
         0x2B => d(DEC, &[HL], prefs),
@@ -305,7 +312,7 @@ pub fn disass(bus: &impl MemoryBus, addr: u16, prefs: &Preferences) -> Result<(u
         0x2E => d(LD, &[L, N8(next_byte)], prefs),
         0x2F => d(CPL, &[], prefs),
 
-        0x30 => d(JR, &[NC, I8(next_byte)], prefs),
+        0x30 => d(JR, &[cNC, I8(next_byte)], prefs),
         0x31 => d(LD, &[SP, N16(next_word)], prefs),
         0x32 => d(LD, &[HLD, A], prefs),
         0x33 => d(INC, &[SP], prefs),
@@ -314,7 +321,7 @@ pub fn disass(bus: &impl MemoryBus, addr: u16, prefs: &Preferences) -> Result<(u
         0x36 => d(LD, &[HLR, N8(next_byte)], prefs),
         0x37 => d(SCF, &[], prefs),
 
-        0x38 => d(JR, &[C, I8(next_byte)], prefs),
+        0x38 => d(JR, &[cC, I8(next_byte)], prefs),
         0x39 => d(ADD, &[HL, SP], prefs),
         0x3A => d(LD, &[A, HLD], prefs),
         0x3B => d(DEC, &[SP], prefs),
@@ -467,36 +474,36 @@ pub fn disass(bus: &impl MemoryBus, addr: u16, prefs: &Preferences) -> Result<(u
         0xBE => d(CP, &[A, HLR], prefs),
         0xBF => d(CP, &[A, A], prefs),
 
-        0xC0 => d(RET, &[NZ], prefs),
+        0xC0 => d(RET, &[cNZ], prefs),
         0xC1 => d(POP, &[BC], prefs),
-        0xC2 => d(JP, &[NZ, N16(next_word)], prefs),
+        0xC2 => d(JP, &[cNZ, N16(next_word)], prefs),
         0xC3 => d(JP, &[N16(next_word)], prefs),
-        0xC4 => d(CALL, &[NZ, N16(next_word)], prefs),
+        0xC4 => d(CALL, &[cNZ, N16(next_word)], prefs),
         0xC5 => d(PUSH, &[BC], prefs),
         0xC6 => d(ADD, &[A, N8(next_byte)], prefs),
         0xC7 => d(RST, &[N8(Some(0x00))], prefs),
 
-        0xC8 => d(RET, &[Z], prefs),
+        0xC8 => d(RET, &[cZ], prefs),
         0xC9 => d(RET, &[], prefs),
-        0xCA => d(JP, &[Z, N16(next_word)], prefs),
+        0xCA => d(JP, &[cZ, N16(next_word)], prefs),
         0xCB => cb_prefix(next_byte, prefs),
-        0xCC => d(CALL, &[Z, N16(next_word)], prefs),
+        0xCC => d(CALL, &[cZ, N16(next_word)], prefs),
         0xCD => d(CALL, &[N16(next_word)], prefs),
         0xCE => d(ADC, &[A, N8(next_byte)], prefs),
         0xCF => d(RST, &[N8(Some(0x08))], prefs),
 
-        0xD0 => d(RET, &[NC], prefs),
+        0xD0 => d(RET, &[cNC], prefs),
         0xD1 => d(POP, &[DE], prefs),
-        0xD2 => d(JP, &[NC, N16(next_word)], prefs),
-        0xD4 => d(CALL, &[NC, N16(next_word)], prefs),
+        0xD2 => d(JP, &[cNC, N16(next_word)], prefs),
+        0xD4 => d(CALL, &[cNC, N16(next_word)], prefs),
         0xD5 => d(PUSH, &[DE], prefs),
         0xD6 => d(SUB, &[A, N8(next_byte)], prefs),
         0xD7 => d(RST, &[N8(Some(0x10))], prefs),
 
         0xD8 => d(RET, &[C], prefs),
         0xD9 => d(RETI, &[], prefs),
-        0xDA => d(JP, &[C, N16(next_word)], prefs),
-        0xDC => d(CALL, &[C, N16(next_word)], prefs),
+        0xDA => d(JP, &[cC, N16(next_word)], prefs),
+        0xDC => d(CALL, &[cC, N16(next_word)], prefs),
         0xDE => d(SBC, &[A, N8(next_byte)], prefs),
         0xDF => d(RST, &[N8(Some(0x18))], prefs),
 
