@@ -167,11 +167,10 @@ pub fn next_operation_offset(operation: &Operation) -> u16 {
 /// # Examples
 ///
 /// ```ignore
-/// let bus = GameboyBus::new(vec![0x01, 0x12, 0x34]);
 /// let prefs = Preferences{upcase: true, comma_space: true};
-/// let result = disassemble(&bus, 0x0, &prefs);
+/// let result = render(&(LD, vec![N16(0x1234)]), 0x0, &prefs);
 ///
-/// assert_eq!(result, Ok((3, "LD BC, $1234".to_string())))
+/// assert_eq!(result, Ok("LD BC, $1234".to_string()))
 /// ```
 ///
 /// # Errors
@@ -244,14 +243,14 @@ pub fn render(operation: &Operation, prefs: &Preferences) -> Result<String, std:
     Ok(buffer)
 }
 
-/// Trait to be implemented by the `disass` function caller. This allows the `disass` function to
+/// Trait to be implemented by the `disassemble` function caller. This allows the `disassemble` function to
 /// access the binary Game Boy data.
 pub trait MemoryBus {
     fn read_byte(&self, addr: u16) -> Option<u8>;
     fn read_word(&self, addr: u16) -> Option<u16>;
 }
 
-/// Display preferences for the `disass` function.
+/// Display preferences for the `disassemble` function.
 ///
 /// * `upcase`: return the textual representation as UPCASE letters (including hexadecimal
 /// representation)
@@ -274,7 +273,7 @@ impl Preferences {
 /// ```ignore
 /// let bus = GameboyBus::new(vec![0x01, 0x12, 0x34]);
 /// let prefs = Preferences{upcase: true, comma_space: true};
-/// let result = disass(&bus, 0x0, &prefs);
+/// let result = disassemble(&bus, 0x0, &prefs);
 ///
 /// assert_eq!(result, Ok((3, "LD BC, $1234".to_string())))
 /// ```
