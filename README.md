@@ -22,6 +22,11 @@ gb-disass-rs = "*"
 These are the usable exported constructs. For more information on their usage, please read the [documentation](https://docs.rs/gb-disass-rs/latest/gb_disass_rs/)
 
 ```rust
+pub enum Mnemonic;
+pub enum Operand;
+
+pub type Operation = (Mnemonic, Vec<Operand>);
+
 pub trait MemoryBus {
     fn read_byte(&self, addr: u16) -> Option<u8>;
     fn read_word(&self, addr: u16) -> Option<u16>;
@@ -32,50 +37,23 @@ pub struct Preferences {
     comma_space: bool,
 }
 
-pub fn disassemble(bus: &impl MemoryBus, addr: u16, prefs: &Preferences) -> Result<(u16, String), String>;
+pub struct SimpleBus {
+    data: Vec<u8>,
+}
+
 pub fn decode(bus: &impl MemoryBus, addr: u16) -> Result<Operation, String>;
+pub fn render(operation: &Operation, prefs: &Preferences) -> Result<String, std::fmt::Error>;
 pub fn next_operation_offset(operation: &Operation) -> u16;
+pub fn disassemble(bus: &impl MemoryBus, addr: u16, prefs: &Preferences) -> Operation;
 ```
 
 ## Examples
 
 ```rust
-use gb_disass_rs::{MemoryBus, Preferences, disassemble};
-
-struct GameboyBus {
-    data: Vec<u8>,
-}
-
-impl GameboyBus {
-    pub fn new(data: Vec<u8>) -> GameboyBus {
-        GameboyBus { data }
-    }
-}
-
-impl MemoryBus for GameboyBus {
-    fn read_byte(&self, addr: u16) -> Option<u8> {
-        let idx = addr as usize;
-
-        if idx >= self.data.len() {
-            None
-        } else {
-            Some(self.data[idx])
-        }
-    }
-
-    fn read_word(&self, addr: u16) -> Option<u16> {
-        let idx = addr as usize;
-
-        if idx + 1 >= self.data.len() {
-            None
-        } else {
-            Some((self.data[idx] as u16) << 8 | self.data[idx + 1] as u16)
-        }
-    }
-}
+use gb_disass_rs::{SimpleBus, Preferences, disassemble};
 
 fn main() {
-    let bus = GameboyBus::new(vec![0x01, 0x12, 0x34]);
+    let bus = SimpleBus::new(vec![0x01, 0x12, 0x34]);
     let prefs = Preferences{upcase: true, comma_space: true};
     let result = disassemble(&bus, 0x0, &prefs);
 
