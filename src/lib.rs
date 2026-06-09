@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 /// Symbolic representation of all Game Boy operation mnemonics
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum Mnemonic {
     NOP,
     STOP,
@@ -68,7 +68,7 @@ impl Display for Mnemonic {
 /// * `-I` -> Increment
 /// * `-D` -> Decrement
 /// * `c-` -> condition. e.g. `cNC -> NC`
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
 #[allow(non_camel_case_types)]
 pub enum Operand {
     A,
