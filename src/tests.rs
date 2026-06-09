@@ -12,7 +12,7 @@ fn nop() {
 
 #[test]
 fn ld_bc_n16() {
-    let bus = SimpleBus::new(vec![0x01, 0xab, 0xcd]);
+    let bus = SimpleBus::new(vec![0x01, 0xcd, 0xab]);
     let prefs = Preferences{upcase: true, comma_space: true};
     let result = disassemble(&bus, 0x0, &prefs);
 
@@ -39,7 +39,7 @@ fn ld_bc_missing_word() {
 
 #[test]
 fn ld_bc_n16r_lower() {
-    let bus = SimpleBus::new(vec![0x01, 0xab, 0xcd]);
+    let bus = SimpleBus::new(vec![0x01, 0xcd, 0xab]);
     let prefs = Preferences{upcase: false, comma_space: true};
     let result = disassemble(&bus, 0x0, &prefs);
 
@@ -48,7 +48,7 @@ fn ld_bc_n16r_lower() {
 
 #[test]
 fn ld_bc_n16r_no_space() {
-    let bus = SimpleBus::new(vec![0x01, 0x12, 0x34]);
+    let bus = SimpleBus::new(vec![0x01, 0x34, 0x12]);
     let prefs = Preferences{upcase: true, comma_space: false};
     let result = disassemble(&bus, 0x0, &prefs);
 
@@ -57,7 +57,7 @@ fn ld_bc_n16r_no_space() {
 
 #[test]
 fn ld_bc_n16r_lower_no_space() {
-    let bus = SimpleBus::new(vec![0x01, 0x12, 0x34]);
+    let bus = SimpleBus::new(vec![0x01, 0x34, 0x12]);
     let prefs = Preferences{upcase: false, comma_space: false};
     let result = disassemble(&bus, 0x0, &prefs);
 
@@ -120,7 +120,7 @@ fn rlca() {
 
 #[test]
 fn ld_n16r_sp() {
-    let bus = SimpleBus::new(vec![0x08, 0x12, 0x34]);
+    let bus = SimpleBus::new(vec![0x08, 0x34, 0x12]);
     let prefs = Preferences{upcase: true, comma_space: true};
     let result = disassemble(&bus, 0x00, &prefs);
 
@@ -202,7 +202,7 @@ fn stop() {
 
 #[test]
 fn ld_de_n16() {
-    let bus = SimpleBus::new(vec![0x11, 0x12, 0x34]);
+    let bus = SimpleBus::new(vec![0x11, 0x34, 0x12]);
     let prefs = Preferences{upcase: true, comma_space: true};
     let result = disassemble(&bus, 0x0, &prefs);
 
@@ -347,7 +347,7 @@ fn jr_nz_i8() {
 
 #[test]
 fn ld_hl_n16() {
-    let bus = SimpleBus::new(vec![0x21, 0x12, 0x34]);
+    let bus = SimpleBus::new(vec![0x21, 0x34, 0x12]);
     let prefs = Preferences{upcase: true, comma_space: true};
     let result = disassemble(&bus, 0x0, &prefs);
 
@@ -492,7 +492,7 @@ fn jr_nc_i8() {
 
 #[test]
 fn ld_sp_n16() {
-    let bus = SimpleBus::new(vec![0x31, 0x12, 0x34]);
+    let bus = SimpleBus::new(vec![0x31, 0x34, 0x12]);
     let prefs = Preferences{upcase: true, comma_space: true};
     let result = disassemble(&bus, 0x0, &prefs);
 
@@ -1806,7 +1806,7 @@ fn pop_bc() {
 
 #[test]
 fn jp_nz_n16() {
-    let bus = SimpleBus::new(vec![0xC2, 0x12, 0x34]);
+    let bus = SimpleBus::new(vec![0xC2, 0x34, 0x12]);
     let prefs = Preferences{upcase: true, comma_space: true};
     let result = disassemble(&bus, 0x00, &prefs);
 
@@ -1815,7 +1815,7 @@ fn jp_nz_n16() {
 
 #[test]
 fn jp_n16() {
-    let bus = SimpleBus::new(vec![0xC3, 0x12, 0x34]);
+    let bus = SimpleBus::new(vec![0xC3, 0x34, 0x12]);
     let prefs = Preferences{upcase: true, comma_space: true};
     let result = disassemble(&bus, 0x00, &prefs);
 
@@ -1824,7 +1824,7 @@ fn jp_n16() {
 
 #[test]
 fn call_nz_n16() {
-    let bus = SimpleBus::new(vec![0xC4, 0x12, 0x34]);
+    let bus = SimpleBus::new(vec![0xC4, 0x34, 0x12]);
     let prefs = Preferences{upcase: true, comma_space: true};
     let result = disassemble(&bus, 0x00, &prefs);
 
@@ -1878,7 +1878,7 @@ fn ret() {
 
 #[test]
 fn jp_z_n16() {
-    let bus = SimpleBus::new(vec![0xCA, 0x12, 0x34]);
+    let bus = SimpleBus::new(vec![0xCA, 0x34, 0x12]);
     let prefs = Preferences{upcase: true, comma_space: true};
     let result = disassemble(&bus, 0x00, &prefs);
 
@@ -1887,7 +1887,7 @@ fn jp_z_n16() {
 
 #[test]
 fn call_z_n16() {
-    let bus = SimpleBus::new(vec![0xCC, 0x12, 0x34]);
+    let bus = SimpleBus::new(vec![0xCC, 0x34, 0x12]);
     let prefs = Preferences{upcase: true, comma_space: true};
     let result = disassemble(&bus, 0x00, &prefs);
 
@@ -1896,7 +1896,7 @@ fn call_z_n16() {
 
 #[test]
 fn call_n16() {
-    let bus = SimpleBus::new(vec![0xCD, 0x12, 0x34]);
+    let bus = SimpleBus::new(vec![0xCD, 0x34, 0x12]);
     let prefs = Preferences{upcase: true, comma_space: true};
     let result = disassemble(&bus, 0x00, &prefs);
 
@@ -1942,7 +1942,7 @@ fn pop_de() {
 
 #[test]
 fn jp_nc_n16() {
-    let bus = SimpleBus::new(vec![0xD2, 0x12, 0x34]);
+    let bus = SimpleBus::new(vec![0xD2, 0x34, 0x12]);
     let prefs = Preferences{upcase: true, comma_space: true};
     let result = disassemble(&bus, 0x00, &prefs);
 
@@ -1951,7 +1951,7 @@ fn jp_nc_n16() {
 
 #[test]
 fn call_nc_n16() {
-    let bus = SimpleBus::new(vec![0xD4, 0x12, 0x34]);
+    let bus = SimpleBus::new(vec![0xD4, 0x34, 0x12]);
     let prefs = Preferences{upcase: true, comma_space: true};
     let result = disassemble(&bus, 0x00, &prefs);
 
@@ -2005,7 +2005,7 @@ fn reti() {
 
 #[test]
 fn jp_c_n16() {
-    let bus = SimpleBus::new(vec![0xDA, 0x12, 0x34]);
+    let bus = SimpleBus::new(vec![0xDA, 0x34, 0x12]);
     let prefs = Preferences{upcase: true, comma_space: true};
     let result = disassemble(&bus, 0x00, &prefs);
 
@@ -2014,7 +2014,7 @@ fn jp_c_n16() {
 
 #[test]
 fn call_c_n16() {
-    let bus = SimpleBus::new(vec![0xDC, 0x12, 0x34]);
+    let bus = SimpleBus::new(vec![0xDC, 0x34, 0x12]);
     let prefs = Preferences{upcase: true, comma_space: true};
     let result = disassemble(&bus, 0x00, &prefs);
 
@@ -2123,7 +2123,7 @@ fn jp_hl() {
 
 #[test]
 fn ld_n16r_a() {
-    let bus = SimpleBus::new(vec![0xEA, 0x12, 0x34]);
+    let bus = SimpleBus::new(vec![0xEA, 0x34, 0x12]);
     let prefs = Preferences{upcase: true, comma_space: true};
     let result = disassemble(&bus, 0x00, &prefs);
 
@@ -2241,7 +2241,7 @@ fn ld_sp_hl() {
 
 #[test]
 fn ld_a_n16r() {
-    let bus = SimpleBus::new(vec![0xFA, 0x12, 0x34]);
+    let bus = SimpleBus::new(vec![0xFA, 0x34, 0x12]);
     let prefs = Preferences{upcase: true, comma_space: true};
     let result = disassemble(&bus, 0x00, &prefs);
 

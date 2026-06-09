@@ -278,7 +278,7 @@ impl MemoryBus for SimpleBus {
         if idx + 1 >= self.data.len() {
             None
         } else {
-            Some((self.data[idx] as u16) << 8 | self.data[idx + 1] as u16)
+            Some((self.data[idx + 1] as u16) << 8 | self.data[idx] as u16)
         }
     }
 }
