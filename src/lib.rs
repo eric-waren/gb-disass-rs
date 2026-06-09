@@ -119,7 +119,7 @@ pub type Operation = (Mnemonic, Vec<Operand>);
 /// # Examples
 ///
 /// ```ignore
-/// let bus = SimpleBus::new(vec![0x01, 0x12, 0x34]);
+/// let bus = SimpleBus::new(vec![0x01, 0x34, 0x12]);
 /// let operation = decode(&bus, addr)?;
 ///
 /// assert_eq!(next_operation_offset(operation), 3);
@@ -304,7 +304,7 @@ impl Preferences {
 ///
 /// # Example
 /// ```ignore
-/// let bus = SimpleBus::new(vec![0x01, 0x12, 0x34]);
+/// let bus = SimpleBus::new(vec![0x01, 0x34, 0x12]);
 /// let prefs = Preferences{upcase: true, comma_space: true};
 /// let result = disassemble(&bus, 0x0, &prefs);
 ///
@@ -352,7 +352,7 @@ fn next_word(bus: &impl MemoryBus, addr: u16) -> Result<u16, String> {
 /// # Example
 ///
 /// ```ignore
-/// let bus = SimpleBus::new(vec![0x01, 0x12, 0x34]);
+/// let bus = SimpleBus::new(vec![0x01, 0x34, 0x12]);
 /// let (mn, ops) = decode(&bus, 0x00);
 ///
 /// assert_eq!(mn, Mnemonic::LD);

@@ -53,7 +53,7 @@ pub fn disassemble(bus: &impl MemoryBus, addr: u16, prefs: &Preferences) -> Oper
 use gb_disass_rs::{SimpleBus, Preferences, disassemble};
 
 fn main() {
-    let bus = SimpleBus::new(vec![0x01, 0x12, 0x34]);
+    let bus = SimpleBus::new(vec![0x01, 0x34, 0x12]);
     let prefs = Preferences{upcase: true, comma_space: true};
     let result = disassemble(&bus, 0x0, &prefs);
 
