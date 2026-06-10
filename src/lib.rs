@@ -111,6 +111,7 @@ pub enum Operand {
     I8(i8),
     N16(u16),
     N16R(u16), // [n16],
+    FF(u8), // [$FF+u8]
 
     Index(u8),
 }
@@ -126,7 +127,7 @@ impl Operand {
         use Operand::*;
 
         match self {
-            A | B | C | D | E | H | L | CR | BCR | DER | HLR | HLI | HLD | N8(_) | I8(_) | N16R(_) =>  true,
+            A | B | C | D | E | H | L | CR | BCR | DER | HLR | HLI | HLD | N8(_) | I8(_) | N16R(_) | FF(_) =>  true,
             _ => false
         }
     }
@@ -162,7 +163,7 @@ impl Operand {
         use Operand::*;
 
         match self {
-            CR | BCR | DER | HLR | HLI | HLD | N16R(_) => true,
+            CR | BCR | DER | HLR | HLI | HLD | N16R(_) | FF(_) => true,
             _ => false
         }
     }
@@ -178,6 +179,14 @@ impl Operand {
 
     pub fn is_immediate_ref(&self) -> bool {
         if let Operand::N16R(_) = self {
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn is_ff(&self) -> bool {
+        if let Operand::FF(_) = self {
             true
         } else {
             false
@@ -219,6 +228,9 @@ pub fn next_operation_offset(operation: &Operation) -> u16 {
                     count += 1;
                 }
             },
+            FF(_) => {
+                count += 1;
+            }
             I8(_) => {
                 count += 1;
             },
@@ -285,12 +297,11 @@ pub fn render(operation: &Operation, prefs: &Preferences) -> Result<String, std:
             },
             HLI | HLD => write!(buffer, "[{}]", op)?,
             N8(byte) => {
-                if let LDH = mn {
-                    write!(buffer, "[$FF{:02X}]", byte)?;
-                } else {
-                    write!(buffer, "${:02X}", byte)?;
-                }
+                write!(buffer, "${:02X}", byte)?;
             },
+            FF(byte) => {
+                write!(buffer, "[$FF{:02X}]", byte)?;
+            }
             I8(byte) => {
                 if let LD = mn {
                     let val = *byte as i8;
@@ -700,7 +711,7 @@ pub fn decode(bus: &impl MemoryBus, addr: u16) -> Result<Operation, String> {
         0xDE => Ok((SBC, vec![A, N8(next_byte(bus, addr)?)])),
         0xDF => Ok((RST, vec![N8(0x18)])),
 
-        0xE0 => Ok((LDH, vec![N8(next_byte(bus, addr)?), A])),
+        0xE0 => Ok((LDH, vec![FF(next_byte(bus, addr)?), A])),
         0xE1 => Ok((POP, vec![HL])),
         0xE2 => Ok((LDH, vec![CR, A])),
         0xE5 => Ok((PUSH, vec![HL])),
@@ -713,7 +724,7 @@ pub fn decode(bus: &impl MemoryBus, addr: u16) -> Result<Operation, String> {
         0xEE => Ok((XOR, vec![A, N8(next_byte(bus, addr)?)])),
         0xEF => Ok((RST, vec![N8(0x28)])),
 
-        0xF0 => Ok((LDH, vec![A, N8(next_byte(bus, addr)?)])),
+        0xF0 => Ok((LDH, vec![A, FF(next_byte(bus, addr)?)])),
         0xF1 => Ok((POP, vec![AF])),
         0xF2 => Ok((LDH, vec![A, CR])),
         0xF3 => Ok((DI, vec![])),
