@@ -62,6 +62,17 @@ impl Display for Mnemonic {
     }
 }
 
+impl Mnemonic {
+    pub fn is_jump(&self) -> bool {
+        use Mnemonic::*;
+
+        match self {
+            CALL | RET | RETI | JP | JR | RST => true,
+            _ => false
+        }
+    }
+}
+
 /// Symbolic representation of all Game Boy operation operands
 ///
 /// * `-R` -> Reference. e.g. `HLR -> [HL]`
@@ -107,6 +118,70 @@ pub enum Operand {
 impl Display for Operand {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}", self)
+    }
+}
+
+impl Operand {
+    pub fn is_8bit(&self) -> bool {
+        use Operand::*;
+
+        match self {
+            A | B | C | D | E | H | L | CR | BCR | DER | HLR | HLI | HLD | N8(_) | I8(_) | N16R(_) =>  true,
+            _ => false
+        }
+    }
+
+    pub fn is_16bit(&self) -> bool {
+        use Operand::*;
+
+        match self {
+            AF | BC | DE | HL | N16(_)  =>  true,
+            _ => false
+        }
+    }
+
+    pub fn is_register(&self) -> bool {
+        use Operand::*;
+
+        match self {
+            A | B | C | D | E | H | L | AF | BC | DE | HL | N16(_)  =>  true,
+            _ => false
+        }
+    }
+
+    pub fn is_condition(&self) -> bool {
+        use Operand::*;
+
+        match self {
+            cZ | cNZ | cC | cNC  =>  true,
+            _ => false
+        }
+    }
+
+    pub fn is_ref(&self) -> bool {
+        use Operand::*;
+
+        match self {
+            CR | BCR | DER | HLR | HLI | HLD | N16R(_) => true,
+            _ => false
+        }
+    }
+
+    pub fn is_immediate(&self) -> bool {
+        use Operand::*;
+
+        match self {
+            N8(_) | I8(_) | N16(_) =>  true,
+            _ => false
+        }
+    }
+
+    pub fn is_immediate_ref(&self) -> bool {
+        if let Operand::N16R(_) = self {
+            true
+        } else {
+            false
+        }
     }
 }
 
