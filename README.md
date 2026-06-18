@@ -43,7 +43,7 @@ pub struct SimpleBus {
 
 pub fn decode(bus: &impl MemoryBus, addr: u16) -> Result<Operation, String>;
 pub fn render(operation: &Operation, prefs: &Preferences) -> Result<String, std::fmt::Error>;
-pub fn next_operation_offset(operation: &Operation) -> u16;
+pub fn next_offset(operation: &Operation) -> u16;
 pub fn disassemble(bus: &impl MemoryBus, addr: u16, prefs: &Preferences) -> Operation;
 ```
 

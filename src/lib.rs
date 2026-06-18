@@ -219,10 +219,10 @@ impl Operation {
 /// let bus = SimpleBus::new(vec![0x01, 0x34, 0x12]);
 /// let operation = decode(&bus, addr)?;
 ///
-/// assert_eq!(next_operation_offset(operation), 3);
+/// assert_eq!(next_offset(operation), 3);
 /// ```
 ///
-pub fn next_operation_offset(operation: &Operation) -> u16 {
+pub fn next_offset(operation: &Operation) -> u16 {
     // There's at least one byte read
     let mut count = 1;
 
@@ -424,7 +424,7 @@ impl Preferences {
 /// The byte count number can be used to increment a PC register in an emulator.
 pub fn disassemble(bus: &impl MemoryBus, addr: u16, prefs: &Preferences) -> Result<(u16, String), String> {
     let operation = decode(bus, addr)?;
-    let offset = next_operation_offset(&operation);
+    let offset = next_offset(&operation);
 
     let repr = render(&operation, prefs).map_err(|e| format!("A formatting error occured: {}", e))?;
 
