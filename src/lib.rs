@@ -717,7 +717,7 @@ pub fn decode(bus: &impl MemoryBus, addr: u16) -> Result<Operation, String> {
         0xD6 => (SUB, vec![A, N8(next_byte(bus, addr)?)]),
         0xD7 => (RST, vec![N8(0x10)]),
 
-        0xD8 => (RET, vec![C]),
+        0xD8 => (RET, vec![cC]),
         0xD9 => (RETI, vec![]),
         0xDA => (JP, vec![cC, N16(next_word(bus, addr)?)]),
         0xDC => (CALL, vec![cC, N16(next_word(bus, addr)?)]),
