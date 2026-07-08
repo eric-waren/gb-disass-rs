@@ -17,6 +17,19 @@ Via `Cargo.toml`
 gb-disass-rs = "*"
 ```
 
+Optionally, you can use the symbols resolution feature
+
+```sh
+cargo add gb-disass-rs --features symbols
+```
+
+or in your `Cargo.toml`
+
+```toml
+[dependencies]
+gb-disass-rs = { features = ["symbols"] }
+```
+
 ## Interfaces
 
 These are the usable exported constructs. For more information on their usage, please read the [documentation](https://docs.rs/gb-disass-rs/latest/gb_disass_rs/)
@@ -58,6 +71,25 @@ fn main() {
     let result = disassemble(&bus, 0x0, &prefs);
 
     assert_eq!(result, Ok((3, "LD BC, $1234".to_string())))
+}
+```
+
+Using the symbols resolution feature
+
+```rust
+use gb_disass_rs::{SimpleBus, Preferences, disassemble};
+
+fn main() {
+    // $ cat game.sym
+    // 00:0000 Start
+    // 00:0150 EntryPoint
+
+    let prefs = Preferences::new_with_symbols_file("game.sym").unwrap();
+
+    let bus = SimpleBus::new(vec![0xC3, 0x50, 0x01]);
+    let result = disassemble(&bus, 0x00, &prefs);
+
+    assert_eq!(result, Ok((3, "jp EntryPoint".to_string())));
 }
 ```
 

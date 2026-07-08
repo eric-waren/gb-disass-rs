@@ -1,5 +1,11 @@
 use std::fmt::Display;
 
+#[cfg(feature = "symbols")]
+pub mod symbols;
+
+#[cfg(feature = "symbols")]
+use std::io;
+
 /// Symbolic representation of all Game Boy operation mnemonics
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum Mnemonic {
@@ -347,6 +353,9 @@ pub fn render(operation: &Operation, prefs: &Preferences) -> Result<String, std:
 pub trait MemoryBus {
     fn read_byte(&self, addr: u16) -> Option<u8>;
     fn read_word(&self, addr: u16) -> Option<u16>;
+
+    #[cfg(feature = "symbols")]
+    fn addr_location(&self, addr: u16) -> symbols::Location;
 }
 
 /// Vendor-provided bus wrapper over vector of bytes. Also used for testing
@@ -380,6 +389,15 @@ impl MemoryBus for SimpleBus {
             Some((self.data[idx + 1] as u16) << 8 | self.data[idx] as u16)
         }
     }
+
+    #[cfg(feature = "symbols")]
+    fn addr_location(&self, addr: u16) -> symbols::Location {
+        if addr < 0x4000 {
+            gb_sym_file::Location::Banked(0, addr)
+        } else {
+            gb_sym_file::Location::Banked(1, addr)
+        }
+    }
 }
 
 /// Display preferences for the `disassemble` function.
@@ -390,11 +408,33 @@ impl MemoryBus for SimpleBus {
 pub struct Preferences {
     pub upcase: bool,
     pub comma_space: bool,
+    #[cfg(feature = "symbols")]
+    pub symbols: symbols::Symbols,
 }
 
 impl Preferences {
+    #[cfg(not(feature = "symbols"))]
     pub fn new() -> Preferences {
         Preferences { upcase: false, comma_space: true }
+    }
+
+    #[cfg(feature = "symbols")]
+    pub fn new() -> Preferences {
+        Preferences { upcase: false, comma_space: true, symbols: symbols::Symbols::new() }
+    }
+
+    #[cfg(feature = "symbols")]
+    pub fn new_with_symbols_file(path: &str) -> io::Result<Preferences> {
+        let syms = symbols::load_sym_file(path)?;
+
+        Self::new_with_symbols(syms)
+    }
+
+    #[cfg(feature = "symbols")]
+    pub fn new_with_symbols(syms: symbols::Symbols) -> io::Result<Preferences> {
+        Ok(
+            Preferences { upcase: false, comma_space: true, symbols: syms }
+        )
     }
 }
 
@@ -426,7 +466,54 @@ pub fn disassemble(bus: &impl MemoryBus, addr: u16, prefs: &Preferences) -> Resu
     let operation = decode(bus, addr)?;
     let offset = next_offset(&operation);
 
-    let repr = render(&operation, prefs).map_err(|e| format!("A formatting error occured: {}", e))?;
+
+    #[allow(unused_mut)]
+    let mut repr = render(&operation, prefs).map_err(|e| format!("A formatting error occured: {}", e))?;
+
+    #[cfg(feature = "symbols")]
+    {
+        match operation.mnemonic {
+            Mnemonic::JP => {
+                use crate::Operand::N16;
+
+                let index = if operation.operands.len() == 1 { 0 } else { 1 };
+                if let N16(target) = operation.operands[index] {
+                    let location = bus.addr_location(target);
+                    let mut target_str = format!("${:04X}", target);
+
+                    if !prefs.upcase {
+                        target_str = target_str.to_lowercase();
+                    }
+
+                    if let Some(sym) = prefs.symbols.get(&location) {
+                        let new = format!("{} <{}>", sym, target_str);
+                        repr = repr.replace(&target_str, &new);
+                    }
+                }
+            },
+            Mnemonic::JR => {
+                use crate::Operand::I8;
+
+                let index = if operation.operands.len() == 1 { 0 } else { 1 };
+                if let I8(target) = operation.operands[index] {
+                    let target_addr = (((addr + offset) as i16) + (target as i16)) as u16;
+                    let location = bus.addr_location(target_addr);
+
+                    let mut target_str = format!("{}", target);
+                    if !prefs.upcase {
+                        target_str = target_str.to_lowercase();
+                    }
+
+                    if let Some(sym) = prefs.symbols.get(&location) {
+                        repr = repr.replace(&target_str, &sym);
+                    }
+                }
+
+            }
+            _ => ()
+        }
+    }
+
 
     Ok((offset, repr))
 }
@@ -1054,4 +1141,9 @@ fn cb_prefix(opcode: u8) -> (Mnemonic, Vec<Operand>) {
 }
 
 #[cfg(test)]
+#[cfg(not(feature = "symbols"))]
 mod tests;
+
+#[cfg(test)]
+#[cfg(feature = "symbols")]
+mod test_lib_symbols;
