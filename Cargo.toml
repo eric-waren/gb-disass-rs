@@ -1,6 +1,6 @@
 [package]
 name = "gb-disass-rs"
-version = "2.0.0"
+version = "2.1.0"
 edition = "2024"
 authors = ["Eric Waren <eric@unix.guru>"]
 readme = "README.md"
@@ -9,3 +9,12 @@ license = "MIT"
 description = "Game Boy disassembler library in Rust, following RGBDS syntax"
 keywords = ["gameboy", "assembly", "disassembler", "disassembly", "emulation"]
 categories = ["emulators", "game-development", "games"]
+
+[dependencies]
+gb-sym-file = { version = "1.0.1", optional = true }
+
+[features]
+symbols = ["dep:gb-sym-file"]
+
+[dev-dependencies]
+tempfile = "3.27.0"
