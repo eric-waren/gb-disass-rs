@@ -64,11 +64,11 @@ fn test_render_symbols() {
     let bus = SimpleBus::new(vec![0x18, 0xFE]);
     let result = disassemble(&bus, 0x00, &prefs);
 
-    assert_eq!(result, Ok((2, "jr Start <-2>".to_string())));
+    assert_eq!(result, Ok((2, "jr Start <$0000>".to_string())));
 
     // Illegal but will work here
     let bus = SimpleBus::new(vec![0x18, 0x03]);
     let result = disassemble(&bus, 0x00, &prefs);
 
-    assert_eq!(result, Ok((2, "jr Next <3>".to_string())));
+    assert_eq!(result, Ok((2, "jr Next <$0005>".to_string())));
 }

@@ -505,7 +505,7 @@ pub fn disassemble(bus: &impl MemoryBus, addr: u16, prefs: &Preferences) -> Resu
                     }
 
                     if let Some(sym) = prefs.symbols.get(&location) {
-                        let new = format!("{} <{}>", sym, target_str);
+                        let new = format!("{} <${:04X}>", sym, target_addr);
                         repr = repr.replace(&target_str, &new);
                     }
                 }
