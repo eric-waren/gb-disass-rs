@@ -48,27 +48,27 @@ fn test_render_symbols() {
     let bus = SimpleBus::new(vec![0xC3, 0x50, 0x01]);
     let result = disassemble(&bus, 0x00, &prefs);
 
-    assert_eq!(result, Ok((3, "jp EntryPoint".to_string())));
+    assert_eq!(result, Ok((3, "jp EntryPoint <$0150>".to_string())));
 
     let bus = SimpleBus::new(vec![0xC2, 0x50, 0x01]);
     let result = disassemble(&bus, 0x00, &prefs);
 
-    assert_eq!(result, Ok((3, "jp nz, EntryPoint".to_string())));
+    assert_eq!(result, Ok((3, "jp nz, EntryPoint <$0150>".to_string())));
 
     let bus = SimpleBus::new(vec![0xC2, 0x00, 0x40]);
     let result = disassemble(&bus, 0x00, &prefs);
 
-    assert_eq!(result, Ok((3, "jp nz, Plop".to_string())));
+    assert_eq!(result, Ok((3, "jp nz, Plop <$4000>".to_string())));
 
     // Illegal but will work here
     let bus = SimpleBus::new(vec![0x18, 0xFE]);
     let result = disassemble(&bus, 0x00, &prefs);
 
-    assert_eq!(result, Ok((2, "jr Start".to_string())));
+    assert_eq!(result, Ok((2, "jr Start <-2>".to_string())));
 
     // Illegal but will work here
     let bus = SimpleBus::new(vec![0x18, 0x03]);
     let result = disassemble(&bus, 0x00, &prefs);
 
-    assert_eq!(result, Ok((2, "jr Next".to_string())));
+    assert_eq!(result, Ok((2, "jr Next <3>".to_string())));
 }
