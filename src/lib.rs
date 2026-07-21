@@ -473,7 +473,7 @@ pub fn disassemble(bus: &impl MemoryBus, addr: u16, prefs: &Preferences) -> Resu
     #[cfg(feature = "symbols")]
     {
         match operation.mnemonic {
-            Mnemonic::JP => {
+            Mnemonic::JP | Mnemonic::CALL => {
                 use crate::Operand::N16;
 
                 let index = if operation.operands.len() == 1 { 0 } else { 1 };

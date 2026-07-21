@@ -71,4 +71,16 @@ fn test_render_symbols() {
     let result = disassemble(&bus, 0x00, &prefs);
 
     assert_eq!(result, Ok((2, "jr Next <$0005>".to_string())));
+
+    // Illegal but will work here
+    let bus = SimpleBus::new(vec![0xCD, 0x05, 0x00]);
+    let result = disassemble(&bus, 0x00, &prefs);
+
+    assert_eq!(result, Ok((3, "call Next <$0005>".to_string())));
+
+    // Illegal but will work here
+    let bus = SimpleBus::new(vec![0xD4, 0x05, 0x00]);
+    let result = disassemble(&bus, 0x00, &prefs);
+
+    assert_eq!(result, Ok((3, "call nc, Next <$0005>".to_string())));
 }
